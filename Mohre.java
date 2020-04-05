@@ -1,15 +1,13 @@
+import java.util.Objects;
+
 public class Mohre {
     private int x;
     private int y;
-    private String color;
+    private char color;
 
-    public Mohre(int x, char y, int color) {
+    public Mohre(int x, char y, char color) {
         this.x = x - 1;
-        if (color == 0) {
-            this.color = "white";
-
-        } else
-            this.color = "black";
+        this.color=color;
         switch (y) {
             case 'A':
                 this.y = 0;
@@ -35,15 +33,30 @@ public class Mohre {
             case 'H':
                 this.y=7;
                 break;
+            default:
+                this.y=-1;
+                break;
         }
     }
-    public void changeColor(){
-        if(color.equals("white")){
-            color="black";
-        }
-        else{
-            color="white";
-        }
+    public int getY() {
+        return y;
     }
 
+    public int getX() {
+        return x;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Mohre)) return false;
+        Mohre mohre = (Mohre) o;
+        return x == mohre.x &&
+                y == mohre.y ;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(x, y);
+    }
 }

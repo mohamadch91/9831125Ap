@@ -1,15 +1,9 @@
 import javax.swing.*;
-<<<<<<< Updated upstream
-
-public class BoardGame {
-    private int tol;
-    private  int arz;
-    private char[][] Board;
-=======
 import java.awt.*;
 import java.awt.image.ImageObserver;
 import java.io.Console;
 import java.text.AttributedCharacterIterator;
+import java.util.HashSet;
 
 public class BoardGame {
     private  final String ANSI_RESET = "\u001B[0m";
@@ -25,43 +19,54 @@ public class BoardGame {
     private  int arz;
     private char[][] Board;
     private char[][] visualBoard;
->>>>>>> Stashed changes
+    private HashSet<Mohre> white=new HashSet<>();
+    private HashSet<Mohre> black=new HashSet<>();
     public BoardGame(int i,int j){
         tol=i;
         arz=j;
         Board=new char[tol][arz];
-<<<<<<< Updated upstream
+        visualBoard=new char[tol*5][arz*11];
     }
     public void firstPut(){
-=======
-        visualBoard=new char[tol*3][arz*5];
-    }
-    public void firstPut(){
-
-
->>>>>>> Stashed changes
         for (int i = 0; i <arz ; i++) {
             for (int j = 0; j <tol ; j++) {
                 Board[i][j]=' ';
             }
         }
     }
-    public void put(int i,int j,char Color){
-<<<<<<< Updated upstream
-        Board[i][j]= Color;
+    public void checknode(){
+        char test='A';
+
+        for (int i = 0; i <tol ; i++) {
+            for (int j = 0; j <arz ; j++) {
+                if(Board[i][j]=='w'){
+                    test+=j;
+                    Mohre mohre=new Mohre(i,test,'w');
+                    black.remove(mohre);
+                    white.add(mohre);
+
+                }
+                else if(Board[i][j]=='b'){
+                    test+=j;
+                    Mohre mohre=new Mohre(i,test,'b');
+                    white.remove(mohre);
+                    black.add(mohre);
+
+                }
+
+            }
+        }
     }
-    public void show(){
-        
-=======
-        Board[i-1][j-1]= Color;
+    public void put(int x,int y,char Color){
+
+        Board[x][y]= Color;
         updateVisualBoard();
-
-
+        checknode();
     }
     public void updateVisualBoard(){
         for (int i = 0; i <tol ; i++) {
             for (int j = 0; j <arz ; j++) {
-                visualBoard[i*2+1][j*4+2]=Board[i][j];
+                visualBoard[i*4+2][j*10+5]=Board[i][j];
 
             }
 
@@ -69,20 +74,17 @@ public class BoardGame {
     }
     public void setVisualBoard(){
         firstPut();
-        for (int i = 0; i <tol*2.1 ; i++) {
-            for (int j = 0; j <arz*4.1 ; j++) {
-                if(i%2==0&&!(j%4==0)){
+        for (int i = 0; i <=tol*4 ; i++) {
+            for (int j = 0; j <=arz*10 ; j++) {
+                if(i%4==0&&!(j%10==0)){
 
                     visualBoard[i][j]='-';
                 }
-                else if((i%2==0)&&(j%4==0)){
-//                    if(i==0||i==17){
-//                        visualBoard[i][j]='-';
-//                    }
-//                    else
+                else if((i%4==0)&&(j%10==0)){
+//
                     visualBoard[i][j]='|';
                 }
-                else if(!(i%2==0)&&(j%4==0)){
+                else if(!(i%4==0)&&(j%10==0)){
                     visualBoard[i][j]='|';
                 }
                 else{
@@ -93,10 +95,28 @@ public class BoardGame {
         }
 
     }
-
     public void show(){
-        for (int i = 0; i <tol*2.1; i++) {
-            for (int j = 0; j <arz*4.1 ; j++) {
+        int counter=0;
+        int counter1= 1;
+        System.out.print("       ");
+        for (int k = 0; k <arz*10 ; k++) {
+            char test='A';
+            if(k%10==0){
+                test+=counter;
+                System.out.print(test+"         ");
+                counter++;
+            }
+
+        }
+        System.out.println();
+        for (int i = 0; i <=tol*4; i++) {
+            if(i%4==2){
+                System.out.print(counter1+" ");
+            counter1++;}
+            else
+                System.out.print("  ");
+            for (int j = 0; j <=arz*10 ; j++) {
+
                 if(visualBoard[i][j]==' '){
                     System.out.print(ANSIF_ghermez+' '+ANSIF_Reset);
                 }
@@ -111,8 +131,21 @@ public class BoardGame {
             }}
             System.out.println();
         }
+        System.out.println("\n");
+    }
 
+    public char[][] getBoard() {
+        return Board;
+    }
 
->>>>>>> Stashed changes
+    public void setBoard(char[][] board) {
+        Board = board;
+    }
+    public HashSet<Mohre> getBlack() {
+        return black;
+    }
+
+    public HashSet<Mohre> getWhite() {
+        return white;
     }
 }
