@@ -5,6 +5,12 @@ public class Mohre {
     private int y;
     private char color;
 
+    /**
+     *
+     * @param x row number of node.
+     * @param y coulmn number of node.
+     * @param color color of node.
+     */
     public Mohre(int x, char y, char color) {
         this.x = x - 1;
         this.color=color;
