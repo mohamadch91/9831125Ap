@@ -28,5 +28,29 @@ public class Player {
         return cart;
 
     }
+    public Kart rplay(Kart cart,char color,int number){
+        Kart test=null;
+        if(cart.getColor()==color||cart.getNumber()==number){
+            test=new Kart(number, color);
+            removeCart(test);
+        }
+        else if(color=='b'){
+            test=new Kart(number, color);
+        }
+        return test;
+    }
+    public void showAll(){
+        for (int i = 0; i <carts.size() ; i++) {
+            carts.get(i).show();
+        }
+    }
 
+    public void setCarts(ArrayList<Kart> carts) {
+        this.carts = carts;
+    }
+
+
+    public String getName() {
+        return name;
+    }
 }

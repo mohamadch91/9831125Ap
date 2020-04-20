@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 import java.util.Iterator;
 
 public class PlayerBot extends Player {
@@ -19,23 +20,30 @@ public class PlayerBot extends Player {
 
     @Override
     public Kart play(Kart cart) {
-        Kart test=null;
+        Kart test1=null;
         Iterator<Kart> it=carts.iterator();
         while (it.hasNext()){
-            if(cart.getColor()==it.next().getColor()||cart.getNumber()==it.next().getNumber()){
-                test=it.next();
-                removeCart(it.next());
+            Kart test=it.next();
+            if(cart.getColor()==test.getColor()||cart.getNumber()==test.getNumber()){
+                test1=test;
+                removeCart(test);
             }
         }
         it=carts.iterator();
-        if(test==null){
+        if(test1==null){
             while (it.hasNext()){
-                if(it.next().getNumber()==-1){
-                    test=it.next();
-                    removeCart(it.next());
+                Kart test=it.next();
+                if(test.getNumber()==-1||test.getNumber()==-2){
+                    test1=test;
+                    removeCart(test);
                 }
             }
         }
-        return test;
+        return test1;
+    }
+
+    @Override
+    public ArrayList<Kart> getCarts() {
+        return super.getCarts();
     }
 }
