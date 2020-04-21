@@ -6,15 +6,7 @@ public class CircularArrayList<E> extends ArrayList<E>
 @Override
     public E get(int index)
     {
-        if (index == -1)
-        {
-            index = size()-1;
-        }
-
-        else if (index == size())
-        {
-            index = 0;
-        }
+        index=index%size();
 
         return super.get(index);
     }

@@ -34,7 +34,7 @@ public class Kart {
     }
 
     private void setPoint() {
-        if (color != 'b') {
+        if (color != 'l') {
             if (number == 10 || number == 11 || number == 12) point = 20;
             else point = number;
         } else
