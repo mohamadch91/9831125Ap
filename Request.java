@@ -6,14 +6,19 @@ public class Request {
     private String url;
     private HashMap<String, String> header;
     private String body;
-    private int time;
+    private double time;
 
     public Request(Requests type1, String name) {
         this.name = name;
         type = type1;
     }
 
-    public int getTime() {
+
+    public void addField(String s,String s1){
+        header.put(s,s1);
+
+    }
+    public double getTime() {
         return time;
     }
 
@@ -45,7 +50,7 @@ public class Request {
         this.header = header;
     }
 
-    public void setTime(int time) {
+    public void setTime(double time) {
         this.time = time;
     }
 
