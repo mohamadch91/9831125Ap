@@ -2,6 +2,7 @@ import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.rmi.server.UID;
+import java.util.Date;
 import java.util.HashMap;
 
 public class Request implements Serializable {
@@ -9,20 +10,20 @@ public class Request implements Serializable {
     private Methods method;
     private HashMap<String, String> headers;
     private boolean showResponse;
+    private boolean save;
     private String boundry;
+    private String saveAddress="";
     private HashMap<String, String> formdate;
-    public Request(String url,String method,boolean response) {
-        try {
-            this.url=new URL(url);
-        }
-        catch (MalformedURLException e){
-            e.printStackTrace();
-        }
-        this.method=Methods.valueOf(method);
+    public Request(boolean response) {
+        url=null;
+        method=null;
         headers=new HashMap<>();
         formdate=new HashMap<>();
-        boundry="*$"+System.currentTimeMillis()+"";
+        boundry=System.currentTimeMillis()+"";
         this.showResponse=response;
+        save=false;
+        showResponse=false;
+        makeAddress();
     }
     public  void  addHeader(String key ,String value){
         headers.put(key, value);
@@ -50,6 +51,17 @@ public class Request implements Serializable {
     public void setResponse(boolean response) {
         this.showResponse = response;
     }
+    public boolean isSave() {
+        return save;
+    }
+
+    public boolean isShowResponse() {
+        return showResponse;
+    }
+
+    public void setShowResponse(boolean showResponse) {
+        this.showResponse = showResponse;
+    }
 
     public HashMap<String, String> getHeaders() {
         return headers;
@@ -69,5 +81,22 @@ public class Request implements Serializable {
 
     public String getBoundry() {
         return boundry;
+    }
+
+    public void setBoundry(String boundry) {
+        this.boundry = boundry;
+    }
+    public void setSave(boolean save) {
+        this.save = save;
+    }
+
+    public void setSaveAddress(String saveAddress) {
+        this.saveAddress = saveAddress;
+    }
+    public void makeAddress(){
+        if(saveAddress.equals("")){
+            Date date=new Date();
+            saveAddress="output["+date.toString()+"]";
+        }
     }
 }
