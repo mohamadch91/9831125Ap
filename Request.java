@@ -5,7 +5,8 @@ import java.rmi.server.UID;
 import java.util.Date;
 import java.util.HashMap;
 
-public class Request implements Serializable {
+public class Request implements Serializable{
+    private static final long serialVersionUID = 4L;
     private URL url;
     private Methods method;
     private HashMap<String, String> headers;

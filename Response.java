@@ -1,18 +1,32 @@
 import java.io.Serializable;
 
 public class Response implements Serializable {
-    String response;
+    private static final long serialVersionUID = 3L;
+     private byte[] all;
+    private int code;
+    private String message;
 
-    public void setResponse(String response) {
-        this.response = response;
+    public byte[] getAll() {
+        return all;
     }
 
-    public String getResponse() {
-        return response;
+    public void setAll(byte[] all) {
+        this.all = all;
     }
 
+    public int getCode() {
+        return code;
+    }
 
-    public Response(String all){
-        response=all;
+    public void setCode(int code) {
+        this.code = code;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
     }
 }

@@ -18,11 +18,11 @@ public class Jurl {
 
     public static void write(Request request) {
         try {
-            System.out.println("hiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii");
-            ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream(nameMaker()));
+            ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream("M:/uni/secondsummester/AP/Midterm/phase2/" + nameMaker(true)));
             outputStream.writeObject(request);
             outputStream.flush();
             outputStream.close();
+
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -87,14 +87,18 @@ public class Jurl {
 
             }
             System.out.println();
-
+            i++;
         }
 
 
     }
 
-    public static String nameMaker() {
-        String name = "request_" + System.currentTimeMillis() + ".txt";
+    public static String nameMaker(boolean requestType) {
+        String name;
+        if (requestType)
+            name = "request_" + System.currentTimeMillis() + ".txt";
+        else
+            name = "respond_" + System.currentTimeMillis() + ".txt";
         return name;
     }
 
@@ -110,15 +114,17 @@ public class Jurl {
         System.out.println(" use list : show list of request ");
     }
 
-    public static void main(String[] types) {
-//        Scanner input = new Scanner(System.in);
+    public static void main(String[] types1) {
+        Scanner input = new Scanner(System.in);
+        boolean upload=false;
+        String path=" ";
         while (true) {
             if (request == null) {
                 System.out.println(" type Jurl for start and -h or --help for help");
 
-//                String allDate = input.nextLine();
-//
-//                String[] types = allDate.trim().split(" ");
+                String allDate = input.nextLine();
+
+                String[] types = allDate.trim().split(" ");
                 if (types[0].equals("list")) {
                     try {
                         showRequests(read());
@@ -129,7 +135,7 @@ public class Jurl {
                 } else if (types[0].equals("--help") || types[1].equals("-h")) {
                     help();
                 } else if (types[0].equals("exit")) {
-                    break;
+//                    break;
                 } else if (types[0].equals("fire")) {
                     for (int j = 1; j < types.length; j++) {
                         try {
@@ -166,11 +172,15 @@ public class Jurl {
                             i++;
                         } else if (types[i].equals("-S") || types[i].equals("--save")) {
                             request.setSave(true);
-                            i++;
                         } else if (types[i].equals("-i")) {
                             request.setShowResponse(true);
                         } else if (types[i].equals("-f")) {
                             request.setFollow(true);
+                        } else if (types[i].equals("--upload")) {
+                            upload=true;
+                            path=types[i+1];
+                            i++;
+
                         } else if (types[i].equals("-d") || types[i].equals("--date")) {
                             String temp = types[i + 1];
                             temp = temp.trim();
@@ -187,14 +197,16 @@ public class Jurl {
                             i++;
                         } else if (types[i].equals("-O") || types[i].equals("--output")) {
                             request.setSaveRespond(true);
+
                             try {
-                                if (types[i + 1].contains("."))
+                                if (types[i + 1].contains(".")) {
                                     request.setSaveAddress(types[i + 1]);
-                            }
-                            catch (IndexOutOfBoundsException e){
+                                    i++;
+                                }
+                            } catch (IndexOutOfBoundsException e) {
                                 break;
                             }
-                            i++;
+
                         }
 
                     }
@@ -203,10 +215,12 @@ public class Jurl {
             if (request != null) {
                 if (request.isSave()) {
                     write(request);
-                    System.out.println("slllllllm");
+                }
+                if(upload){
+                    uploadBinary(path);
                 }
                 formData();
-                System.exit(0);
+               request=null;
             }
         }
     }
@@ -217,32 +231,32 @@ public class Jurl {
         try {
             URL url = request.getUrl();
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            if (request.isFollow()) {
-                connection.setInstanceFollowRedirects(true);
-            }
-            else{
-                connection.setInstanceFollowRedirects(false);
-            }
             String boundary = request.getBoundry();
             connection.setRequestMethod(request.getMethod().name());
             connection.setDoOutput(true);
             connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+            BufferedInputStream bufferedInputStream = new BufferedInputStream(connection.getInputStream());
+            if (request.isFollow()) {
+                connection.setInstanceFollowRedirects(true);
+            } else {
+                connection.setInstanceFollowRedirects(false);
+            }
+
             for (Map.Entry<String, String> entry : request.getHeaders().entrySet()
             ) {
                 connection.setRequestProperty(entry.getKey(), entry.getValue());
-
             }
             if (!request.getMethod().toString().equals("GET")) {
                 BufferedOutputStream request1 = new BufferedOutputStream(connection.getOutputStream());
                 bufferOutFormData(fooBody, boundary, request1);
+            }
+            byte[] all = bufferedInputStream.readAllBytes();
+            System.out.println(new String(all));
+            if (request.isSaveRespond()) {
+                saveRespond(connection, all, request.getSaveAddress());
+            }
 
-            }
-            BufferedInputStream bufferedInputStream = new BufferedInputStream(connection.getInputStream());
-            if(request.isSaveRespond()){
-                saveRespond(connection,bufferedInputStream,request.getSaveAddress());
-            }
-//            System.out.println(new String(bufferedInputStream.readAllBytes()));
-            System.out.println(connection.getRequestMethod()+connection.getResponseCode()+ connection.getResponseMessage());
+            System.out.println(connection.getRequestMethod() + " " + connection.getResponseCode() + " " + connection.getResponseMessage());
             if (request.isShowResponse())
                 System.out.println(connection.getHeaderFields());
 
@@ -259,13 +273,13 @@ public class Jurl {
             if (entry.getValue().contains(".txt") || entry.getValue().contains(".png")) {
                 bufferedOutputStream.write(("Content-Disposition: form-data; filename=\"" + (new File(entry.getValue())).getName() + "\"\r\nContent-Type: Auto\r\n\r\n").getBytes());
                 try {
-                    BufferedInputStream tempBufferedInputStream = new BufferedInputStream(new FileInputStream(new File("M:/uni/secondsummester/AP/Midterm/phase2/"+entry.getValue())));
+                    BufferedInputStream tempBufferedInputStream = new BufferedInputStream(new FileInputStream(new File("M:/uni/secondsummester/AP/Midterm/phase2/" + entry.getValue())));
                     byte[] filesBytes = tempBufferedInputStream.readAllBytes();
                     bufferedOutputStream.write(filesBytes);
                     bufferedOutputStream.write("\r\n".getBytes());
                 } catch (IOException e) {
                     e.printStackTrace();
-//                    System.out.println("slm");
+
                 }
             } else {
                 bufferedOutputStream.write(("Content-Disposition: form-data; name=\"" + entry.getKey() + "\"\r\n\r\n").getBytes());
@@ -281,26 +295,55 @@ public class Jurl {
         Jurl.request = request;
     }
 
-    public static void saveRespond(HttpURLConnection urlConnection, BufferedInputStream bufferedInputStream,String addrees) {
-       String name;
-        if(addrees.equals(" ")) {
+    public static void saveRespond(HttpURLConnection urlConnection, byte[] all, String addrees) {
+        String name;
+        if (addrees.equals(" ")) {
             String type = urlConnection.getContentType();
             String[] temp = type.split("/");
-
-            temp = temp[1].split("; ");
-             name = "respond_" + System.currentTimeMillis() + "." + temp[0];
-        }
-        else {
-             name=addrees;
+            if (temp[0].toLowerCase().equals("text")) {
+                temp[0] = "txt";
+            } else
+                temp = temp[1].split("; ");
+            name = "respond______" + System.currentTimeMillis() + "." + temp[0];
+        } else {
+            name = addrees;
         }
         try {
             FileOutputStream fileOutputStream = new FileOutputStream("M:/uni/secondsummester/AP/Midterm/phase2/" + name);
-            byte[] all = bufferedInputStream.readAllBytes();
             fileOutputStream.write(all);
             fileOutputStream.flush();
+            ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream("M:/uni/secondsummester/AP/Midterm/phase2/" + nameMaker(false)));
+            Response response = new Response();
+            response.setAll(all);
+            response.setCode(urlConnection.getResponseCode());
+            response.setMessage(urlConnection.getResponseMessage());
+            outputStream.writeObject(response);
+            outputStream.flush();
+            outputStream.close();
             fileOutputStream.close();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    public static void uploadBinary(String path) {
+        try {
+            URL url = request.getUrl();
+            File file = new File(path);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod(request.getMethod().name());
+            connection.setDoOutput(true);
+            connection.setRequestProperty("Content-Type", "application/octet-stream");
+            BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(connection.getOutputStream());
+            BufferedInputStream fileInputStream = new BufferedInputStream(new FileInputStream(file));
+            bufferedOutputStream.write(fileInputStream.readAllBytes());
+            bufferedOutputStream.flush();
+            bufferedOutputStream.close();
+            BufferedInputStream bufferedInputStream = new BufferedInputStream(connection.getInputStream());
+            System.out.println(new String(bufferedInputStream.readAllBytes()));
+            System.out.println(connection.getResponseCode());
+            System.out.println(connection.getHeaderFields());
         } catch (IOException e) {
             e.printStackTrace();
         }
