@@ -18,7 +18,7 @@ public class Jurl {
 
     public static void write(Request request) {
         try {
-
+            System.out.println("hiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii");
             ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream(nameMaker()));
             outputStream.writeObject(request);
             outputStream.flush();
@@ -71,8 +71,7 @@ public class Jurl {
                     System.out.print("headers: ");
                     System.out.print(entry.getKey() + " : " + entry.getValue());
                 }
-            }
-            catch (NullPointerException e){
+            } catch (NullPointerException e) {
 
             }
             try {
@@ -83,8 +82,7 @@ public class Jurl {
                     System.out.print("&");
                 }
                 System.out.print("}");
-            }
-            catch (NullPointerException e) {
+            } catch (NullPointerException e) {
                 System.out.println();
 
             }
@@ -96,7 +94,7 @@ public class Jurl {
     }
 
     public static String nameMaker() {
-        String name = "request_" +System.currentTimeMillis() + ".txt";
+        String name = "request_" + System.currentTimeMillis() + ".txt";
         return name;
     }
 
@@ -107,35 +105,36 @@ public class Jurl {
         System.out.println("-H or --header : for input header and use : for key and value set ");
         System.out.println("-O or --output : for use to show save response or not and enter\n file name with .html");
         System.out.println("-i  for show response headers or not");
+        System.out.println("-f for follow redirect");
         System.out.println(" exit :for exit");
         System.out.println(" use list : show list of request ");
     }
 
-    public static void main(String[] args) {
-        Scanner input = new Scanner(System.in);
+    public static void main(String[] types) {
+//        Scanner input = new Scanner(System.in);
         while (true) {
             if (request == null) {
                 System.out.println(" type Jurl for start and -h or --help for help");
 
-                String allDate = input.nextLine();
-
-                String[] types = allDate.trim().split(" ");
-                if (types[1].equals("list")) {
+//                String allDate = input.nextLine();
+//
+//                String[] types = allDate.trim().split(" ");
+                if (types[0].equals("list")) {
                     try {
                         showRequests(read());
                     } catch (FileNotFoundException e) {
                         e.printStackTrace();
                         System.out.println("No request find to show");
                     }
-                } else if (types[1].equals("--help") || types[1].equals("-h")) {
+                } else if (types[0].equals("--help") || types[1].equals("-h")) {
                     help();
-                } else if (types[1].equals("exit")) {
+                } else if (types[0].equals("exit")) {
                     break;
-                } else if (types[1].equals("fire")) {
-                    for (int j = 2; j < types.length; j++) {
+                } else if (types[0].equals("fire")) {
+                    for (int j = 1; j < types.length; j++) {
                         try {
                             ArrayList<Request> temp1 = read();
-                            request = temp1.get(parseInt(types[j])-1);
+                            request = temp1.get(parseInt(types[j]) - 1);
                             if (request != null)
                                 formData();
                         } catch (FileNotFoundException | NullPointerException e) {
@@ -148,11 +147,11 @@ public class Jurl {
                 } else {
                     request = new Request(false);
                     try {
-                        request.setUrl(new URL(types[1]));
+                        request.setUrl(new URL(types[0]));
                     } catch (MalformedURLException e) {
                         e.printStackTrace();
                     }
-                    for (int i = 2; i < types.length; i++) {
+                    for (int i = 1; i < types.length; i++) {
                         if (types[i].equals("-H") || types[i].equals("--header")) {
                             String temp = types[i + 1];
                             temp = temp.trim();
@@ -168,10 +167,14 @@ public class Jurl {
                         } else if (types[i].equals("-S") || types[i].equals("--save")) {
                             request.setSave(true);
                             i++;
+                        } else if (types[i].equals("-i")) {
+                            request.setShowResponse(true);
+                        } else if (types[i].equals("-f")) {
+                            request.setFollow(true);
                         } else if (types[i].equals("-d") || types[i].equals("--date")) {
                             String temp = types[i + 1];
                             temp = temp.trim();
-                            String[] tempbody = temp.split("&");
+                            String[] tempbody = temp.split("#");
                             for (String s : tempbody
                             ) {
                                 String[] date = s.split("=");
@@ -183,9 +186,14 @@ public class Jurl {
                             request.setMethod(Methods.valueOf(types[i + 1]));
                             i++;
                         } else if (types[i].equals("-O") || types[i].equals("--output")) {
-                            request.setShowResponse(true);
-                            if (types[i + 1].contains(".html"))
-                                request.setSaveAddress(types[i + 1]);
+                            request.setSaveRespond(true);
+                            try {
+                                if (types[i + 1].contains("."))
+                                    request.setSaveAddress(types[i + 1]);
+                            }
+                            catch (IndexOutOfBoundsException e){
+                                break;
+                            }
                             i++;
                         }
 
@@ -193,8 +201,10 @@ public class Jurl {
                 }
             }
             if (request != null) {
-                if (request.isSave())
+                if (request.isSave()) {
                     write(request);
+                    System.out.println("slllllllm");
+                }
                 formData();
                 System.exit(0);
             }
@@ -207,6 +217,12 @@ public class Jurl {
         try {
             URL url = request.getUrl();
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            if (request.isFollow()) {
+                connection.setInstanceFollowRedirects(true);
+            }
+            else{
+                connection.setInstanceFollowRedirects(false);
+            }
             String boundary = request.getBoundry();
             connection.setRequestMethod(request.getMethod().name());
             connection.setDoOutput(true);
@@ -216,14 +232,21 @@ public class Jurl {
                 connection.setRequestProperty(entry.getKey(), entry.getValue());
 
             }
-            if(!request.getMethod().toString().equals("GET")) {
-            BufferedOutputStream request = new BufferedOutputStream(connection.getOutputStream());
-            bufferOutFormData(fooBody, boundary, request);
-            BufferedInputStream bufferedInputStream = new BufferedInputStream(connection.getInputStream());
-            System.out.println(new String(bufferedInputStream.readAllBytes()));
+            if (!request.getMethod().toString().equals("GET")) {
+                BufferedOutputStream request1 = new BufferedOutputStream(connection.getOutputStream());
+                bufferOutFormData(fooBody, boundary, request1);
+
             }
-            System.out.println(connection.getResponseCode());
-            System.out.println(connection.getHeaderFields());
+            BufferedInputStream bufferedInputStream = new BufferedInputStream(connection.getInputStream());
+            if(request.isSaveRespond()){
+                saveRespond(connection,bufferedInputStream,request.getSaveAddress());
+            }
+//            System.out.println(new String(bufferedInputStream.readAllBytes()));
+            System.out.println(connection.getRequestMethod()+connection.getResponseCode()+ connection.getResponseMessage());
+            if (request.isShowResponse())
+                System.out.println(connection.getHeaderFields());
+
+
         } catch (Exception e) {
             e.printStackTrace();
 
@@ -231,21 +254,22 @@ public class Jurl {
     }
 
     public static void bufferOutFormData(HashMap<String, String> body, String boundary, BufferedOutputStream bufferedOutputStream) throws IOException {
-        for (Map.Entry<String,String> entry:body.entrySet()) {
+        for (Map.Entry<String, String> entry : body.entrySet()) {
             bufferedOutputStream.write(("--" + boundary + "\r\n").getBytes());
-            if (entry.getValue().contains(".txt")||entry.getValue().contains(".png")) {
-            bufferedOutputStream.write(("Content-Disposition: form-data; filename=\"" + (new File(entry.getValue())).getName() + "\"\r\nContent-Type: Auto\r\n\r\n").getBytes());
-            try {
-                BufferedInputStream tempBufferedInputStream = new BufferedInputStream(new FileInputStream(new File(entry.getValue())));
-                byte[] filesBytes = tempBufferedInputStream.readAllBytes();
-                bufferedOutputStream.write(filesBytes);
-                bufferedOutputStream.write("\r\n".getBytes());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            if (entry.getValue().contains(".txt") || entry.getValue().contains(".png")) {
+                bufferedOutputStream.write(("Content-Disposition: form-data; filename=\"" + (new File(entry.getValue())).getName() + "\"\r\nContent-Type: Auto\r\n\r\n").getBytes());
+                try {
+                    BufferedInputStream tempBufferedInputStream = new BufferedInputStream(new FileInputStream(new File("M:/uni/secondsummester/AP/Midterm/phase2/"+entry.getValue())));
+                    byte[] filesBytes = tempBufferedInputStream.readAllBytes();
+                    bufferedOutputStream.write(filesBytes);
+                    bufferedOutputStream.write("\r\n".getBytes());
+                } catch (IOException e) {
+                    e.printStackTrace();
+//                    System.out.println("slm");
+                }
             } else {
-            bufferedOutputStream.write(("Content-Disposition: form-data; name=\"" + entry.getKey() + "\"\r\n\r\n").getBytes());
-            bufferedOutputStream.write((entry.getValue() + "\r\n").getBytes());
+                bufferedOutputStream.write(("Content-Disposition: form-data; name=\"" + entry.getKey() + "\"\r\n\r\n").getBytes());
+                bufferedOutputStream.write((entry.getValue() + "\r\n").getBytes());
             }
         }
         bufferedOutputStream.write(("--" + boundary + "--\r\n").getBytes());
@@ -256,5 +280,31 @@ public class Jurl {
     public static void setRequest(Request request) {
         Jurl.request = request;
     }
+
+    public static void saveRespond(HttpURLConnection urlConnection, BufferedInputStream bufferedInputStream,String addrees) {
+       String name;
+        if(addrees.equals(" ")) {
+            String type = urlConnection.getContentType();
+            String[] temp = type.split("/");
+
+            temp = temp[1].split("; ");
+             name = "respond_" + System.currentTimeMillis() + "." + temp[0];
+        }
+        else {
+             name=addrees;
+        }
+        try {
+            FileOutputStream fileOutputStream = new FileOutputStream("M:/uni/secondsummester/AP/Midterm/phase2/" + name);
+            byte[] all = bufferedInputStream.readAllBytes();
+            fileOutputStream.write(all);
+            fileOutputStream.flush();
+            fileOutputStream.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }
+
 

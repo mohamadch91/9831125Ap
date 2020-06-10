@@ -12,8 +12,10 @@ public class Request implements Serializable {
     private boolean showResponse;
     private boolean save;
     private String boundry;
-    private String saveAddress="";
+    private String saveAddress=" ";
+    private boolean follow;
     private HashMap<String, String> formdate;
+    private boolean saveRespond=false;
     public Request(boolean response) {
         url=null;
         method=null;
@@ -23,6 +25,7 @@ public class Request implements Serializable {
         this.showResponse=response;
         save=false;
         showResponse=false;
+        follow=false;
         makeAddress();
     }
     public  void  addHeader(String key ,String value){
@@ -99,4 +102,25 @@ public class Request implements Serializable {
             saveAddress="output["+date.toString()+"]";
         }
     }
+
+    public boolean isFollow() {
+        return follow;
+    }
+
+    public void setFollow(boolean follow) {
+        this.follow = follow;
+    }
+
+    public String getSaveAddress() {
+        return saveAddress;
+    }
+
+    public boolean isSaveRespond() {
+        return saveRespond;
+    }
+    public void setSaveRespond(boolean saveRespond) {
+        this.saveRespond = saveRespond;
+    }
+
+
 }
