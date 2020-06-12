@@ -7,6 +7,7 @@ import java.util.HashMap;
 
 public class Request implements Serializable{
     private static final long serialVersionUID = 4L;
+    private String name;
     private URL url;
     private Methods method;
     private HashMap<String, String> headers;
@@ -17,6 +18,7 @@ public class Request implements Serializable{
     private boolean follow;
     private HashMap<String, String> formdate;
     private boolean saveRespond=false;
+    private boolean uploadBinary=false;
     public Request(boolean response) {
         url=null;
         method=null;
@@ -123,5 +125,19 @@ public class Request implements Serializable{
         this.saveRespond = saveRespond;
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
 
+    public String getName() {
+        return name;
+    }
+
+    public boolean isUploadBinary() {
+        return uploadBinary;
+    }
+
+    public void setUploadBinary(boolean uploadBinary) {
+        this.uploadBinary = uploadBinary;
+    }
 }

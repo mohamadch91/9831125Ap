@@ -3,8 +3,17 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -15,10 +24,24 @@ import java.util.Map;
  * @since 1398-2-23
  */
 public class Insomnnia extends JFrame {
+    Request request = new Request(true);
+    Response responde = new Response();
     // part of app
+    static Jurl jurl = new Jurl(null);
+    //
+    JComboBox itemJComboBox=null;
+    //
     private JPanel part1;
     private JPanel part2;
     private JPanel part3;
+    //
+    ArrayList<JPanel> bodyform = new ArrayList<>();
+    //
+    ArrayList<JPanel> requestHeader = new ArrayList<>();
+    //
+    ArrayList<JPanel> respondHeader = new ArrayList<>();
+    //
+    ArrayList<JPanel> showRequest = new ArrayList<>();
     // url field
     private JTextField url;
     // to save request
@@ -29,7 +52,7 @@ public class Insomnnia extends JFrame {
     // tab for show details
     private JTabbedPane tab = new JTabbedPane();
     // option menu tab
-    private JFrame optionPanel;
+    private JPanel optionPanel;
     // stay in tray or not
     boolean tray;
 
@@ -40,7 +63,7 @@ public class Insomnnia extends JFrame {
      */
     public Insomnnia(String name) {
         super(name);
-        optionPanel = new JFrame("OPTION PANEL");
+        optionPanel = new JPanel();
         setLayout(new BorderLayout());
         save = new HashMap<>();
         part1 = new JPanel();
@@ -49,8 +72,9 @@ public class Insomnnia extends JFrame {
         // add all parts to Jframe.
         allPart();
         resize();
-
-        url = new JTextField("https://api.myproduct.com/v1/users");
+        menu();
+        showRequests();
+        url = new JTextField("https://foo.com");
         // header off app
         headerP1();
         // header of part2
@@ -62,7 +86,7 @@ public class Insomnnia extends JFrame {
         // body of part 3
         bodyP3();
         // menu bar
-        menu();
+
 //        theme();
     }
 
@@ -117,7 +141,13 @@ public class Insomnnia extends JFrame {
         JPanel saveList = new JPanel();
         saveList.setLayout(new BoxLayout(saveList, BoxLayout.Y_AXIS));
         // one panel and label for each request.
-        for (Map.Entry<String, Request> entry : save.entrySet()) {
+        ArrayList<Request> temp = null;
+        try {
+            temp = jurl.read();
+        } catch (FileNotFoundException e) {
+
+        }
+        for (Request r : temp) {
             JLabel textArea = new JLabel(" ");
             JPanel panel = new JPanel();
             panel.add(textArea);
@@ -132,7 +162,8 @@ public class Insomnnia extends JFrame {
             textArea.setFocusable(true);
             textArea.setOpaque(true);
             // set text request type and name
-            textArea.setText(entry.getValue().getType() + "                " + entry.getKey());
+            textArea.setText(r.getMethod().name() + " "+r.getUrl().toString() + r.getName());
+            showRequest.add(panel);
             saveList.add(panel);
         }
         // set background
@@ -154,9 +185,10 @@ public class Insomnnia extends JFrame {
         url.setSize(200, 50);
         url.setFont(Font.getFont("Arial"));
         // item box for request type
-        String[] allRequest = {Requests.GET.name(), "PUT", "DELETE", "OPTION", "POST", "PATCH", "HEAD"};
+        String[] allRequest = {"GET", "PUT", "DELETE", "OPTION", "POST", "PATCH", "HEAD"};
         //add to Jitem box
-        JComboBox itemJComboBox = new JComboBox(allRequest);
+         itemJComboBox = new JComboBox(allRequest);
+
         // add send button to panel
         // no action now for next phase.
         JButton send = new JButton("SEND");
@@ -167,42 +199,91 @@ public class Insomnnia extends JFrame {
                 // get request name
                 String name = JOptionPane.showInputDialog(frame, "Please enter Request Name.");
 //             make new request
-                Request test = new Request(Requests.valueOf(itemJComboBox.getSelectedItem().toString()), name);
-                test.setUrl(url.getText());
+                request.setName(name);
                 //reach components to set request field.
-                JTabbedPane tabbedPane = (JTabbedPane) part2.getComponent(1);
-                JPanel panel = (JPanel) tabbedPane.getComponent(0);
-                JTextArea textArea = (JTextArea) panel.getComponent(0);
-                test.setBody(textArea.getText());
-                //get all header parts.
-                JPanel panel1 = (JPanel) tabbedPane.getComponent(1);
-                Component[] all = panel1.getComponents();
-                for (int i = 0; i < panel1.getComponentCount(); i++) {
-                    if (all[i] instanceof JTextField) {
-                        JTextField field = (JTextField) all[i];
-                        JTextField field1 = (JTextField) all[i + 1];
-                        // check empty or full .
-                        if (field.getText().equals("key") || field1.getText().equals("value"))
-                            test.addField("", "");
-                        else
-                            test.addField(field.getText(), field1.getText());
-                        // reach next jtext field
-                        i += 4;
+
+    //hmon readd
+                read();
+                jurl.setRequest(request);
+                jurl.execute();
+                responde=jurl.getResponse();
+               jurl.write(request);
+               showRequests();
+               status.setText(responde.getCode()+" "+responde.getMessage()+" lentgh= "+responde.getAll().length);
+               time.setText(responde.getTime()+"");
+               JTabbedPane temp=(JTabbedPane)tab.getComponent(0);
+               JPanel raw=(JPanel)temp.getComponent(0);
+               JTextArea all=(JTextArea)raw.getComponent(0);
+               all.setText(new String(responde.getAll()));
+               JPanel preview=(JPanel)temp.getComponent(1);
+               //
+               Map<String, List<String>> headers=responde.getRespondheader();
+               //
+               List<String> type=headers.get("Content-Type");
+                for (String s:type
+                     ) {
+                    if(s.contains("html")){
+                        JEditorPane ed1=new JEditorPane("text/html",new String(responde.getAll()));
+                        preview.remove(0);
+                        preview.add(ed1);
+
                     }
+                    else if(s.contains("png")){
+                        name = "respond______" + System.currentTimeMillis() + ".png" ;
+                        try {
+                            FileOutputStream fileOutputStream = new FileOutputStream("M:/uni/secondsummester/AP/Midterm/phase3/" + name);
+                            fileOutputStream.write(responde.getAll());
+                            fileOutputStream.flush();
+                            fileOutputStream.close();
+                            ImageIcon image=new ImageIcon("M:/uni/secondsummester/AP/Midterm/phase3/" + name);
+                            JLabel jLabel=new JLabel(image);
+                            preview.remove(0);
+                            preview.add(jLabel);
+                        } catch (FileNotFoundException d) {
+                            d.printStackTrace();
+                        } catch (IOException d) {
+                            d.printStackTrace();
+                        }
+                    }
+                    else if(s.contains("plain")){
+                        JTextArea textArea=(JTextArea)preview.getComponent(0);
+                        textArea.setText(new String(responde.getAll()));
+                    }
+
                 }
-                test.setTime(1.612);
-                // put request to save hash map.
-                save.put(name, test);
-                //update panel in part 1
-                showRequests();
-                //get time
-                Double time1 = test.getTime();
-                time.setText(time1.toString());
-                //for status
+                //
+                JPanel header=(JPanel)tab.getComponent(1);
+                for (Map.Entry<String,List<String>> entry: headers.entrySet()) {
+                    String string = "";
+                    for (String s:entry.getValue()
+                         ) {
+                        string+=s;
+                    }
+                    addP3(entry.getKey(),string);
+                }
+                //
+                JButton copy = new JButton("Copy to Clipboard");
+                //add button
+                header.add(copy);
+                //set copy button at the end of panel
+                int x = header.getComponentCount() / 2;
+
+                copy.setBounds(300, 75 * x, 150, 25);
+
 
                 //
-                JPanel body = (JPanel) tab.getComponent(0);
-                JPanel header = (JPanel) tab.getComponent(1);
+
+    // yadam bashe read konam ve befrestam ba jurl
+    // va namayesh to part
+                // gozashtn action listener baray panel ha toye show
+                // put request to save hash map.
+                //update panel in part 1
+
+                //get time
+              //for status
+
+                //
+
                 //empty space for save
 
 
@@ -215,6 +296,14 @@ public class Insomnnia extends JFrame {
         send.setSize(50, 50);
         // save button.
         JButton save = new JButton("SAVE");
+        save.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                read();
+               jurl.write(request);
+               showRequests();
+            }
+        });
         save.setSize(50, 50);
         // panel for add al components in one panel  header.
         JPanel header = new JPanel();
@@ -252,27 +341,8 @@ public class Insomnnia extends JFrame {
         JPanel header = new JPanel();
         header.setBackground(Color.BLACK);
         // adding combo box for extra point
-//        JComboBox bodyItem = new JComboBox();
-//        bodyItem.addItem("FORM DATE");
-//        JMenuItem json=new JMenuItem("JSON");
-//        bodyItem.add(messageBody);
-//        bodyItem.add(json);
+
         // add text area for body message
-        JTextArea message = new JTextArea("body message ");
-        // go next line at the end
-        message.setLineWrap(true);
-        message.setBackground(Color.GRAY);
-        message.setForeground(Color.WHITE);
-        message.setFont(new Font("Arial", 14, 16));
-        ;
-        message.setFocusable(true);
-        message.setOpaque(true);
-        message.setEditable(true);
-        // set size for body part
-        message.setPreferredSize(new Dimension(body.getX() + 400, body.getY() + 900));
-        // add text area to the body panel.
-        body.add(message);
-        // add Jpanel for key and value and bUttons
         JPanel part = new JPanel();
         //  set color
         part.setBackground(Color.BLACK);
@@ -315,7 +385,8 @@ public class Insomnnia extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // remove all of panel from header panel
-                header.remove(part);
+                body.remove(part);
+                bodyform.remove(part);
             }
         });
         //add Add button
@@ -324,20 +395,93 @@ public class Insomnnia extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // add new panel to header with add method.
-                header.add(add(header));
+                JPanel temp = add(body);
+                bodyform.add(temp);
+                body.add(temp);
             }
         });
         //set size of buttons.
         add.setPreferredSize(new Dimension(60, 25));
         delete.setPreferredSize(new Dimension(49, 25));
-        //add component to one panel.
         part.add(key);
         part.add(value);
         part.add(checkBox);
         part.add(delete);
         part.add(add);
+
+
+        // add text area to the body panel.
+        bodyform.add(part);
+        body.add(part);
+        // add Jpanel for key and value and bUttons
+        JPanel part1 = new JPanel();
+        //  set color
+        part1.setBackground(Color.BLACK);
+        part1.setLayout(new FlowLayout());
+        // text field for key
+        JTextField key1 = new JTextField("key");
+        // set text color and back ground color.
+        key1.setBackground(Color.GRAY);
+        key1.setForeground(Color.WHITE);
+        key1.setPreferredSize(new Dimension(100, 25));
+        key1.setEditable(true);
+        // text field for value
+        JTextField value1 = new JTextField("value");
+        value1.setBackground(Color.GRAY);
+        value1.setForeground(Color.WHITE);
+        value1.setPreferredSize(new Dimension(100, 25));
+        value1.setEditable(true);
+        //set check box for  areas
+        JCheckBox checkBox1 = new JCheckBox();
+        checkBox1.setSelected(true);
+        checkBox1.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                JCheckBox test = (JCheckBox) e.getSource();
+                if (test.isSelected()) {
+                    // if checked can edit text fields.
+                    key1.setEditable(true);
+                    value1.setEditable(true);
+                }
+                // else can not edit text field.
+                else {
+                    key1.setEditable(false);
+                    value1.setEditable(false);
+                }
+            }
+        });
+        //add button delete.
+        JButton delete1 = new JButton("\uD83D\uDDD1");
+        delete1.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // remove all of panel from header panel
+                header.remove(part1);
+                requestHeader.remove(part1);
+            }
+        });
+        //add Add button
+        JButton add1 = new JButton("Add");
+        add1.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // add new panel to header with add method.
+                JPanel temp = add(header);
+                header.add(temp);
+                requestHeader.add(temp);
+            }
+        });
+        //set size of buttons.
+        add1.setPreferredSize(new Dimension(60, 25));
+        delete1.setPreferredSize(new Dimension(49, 25));
+        //add component to one panel.
+        part1.add(key1);
+        part1.add(value1);
+        part1.add(checkBox1);
+        part1.add(delete1);
+        part1.add(add1);
         // add all components to header panel.
-        header.add(part);
+        header.add(part1);
         // add all tabs to tabbed pane.
         tab.add(body, "Body");
         tab.add(header, "Header");
@@ -351,8 +495,8 @@ public class Insomnnia extends JFrame {
      */
     public void headerP3() {
         // new Jlabel with random text
-        status = new JLabel("OK 600");
-        time = new JLabel("1.612 s");
+        status = new JLabel("no Respond");
+        time = new JLabel("System time is" + System.currentTimeMillis());
         // set fonts and size
         status.setFont(new Font("Arial", 14, 25));
         status.setForeground(Color.WHITE);
@@ -373,13 +517,15 @@ public class Insomnnia extends JFrame {
     }
 
     /**
-     *add tabbed pane to part3
+     * add tabbed pane to part3
      * add body message field.
      * add header fields.
      */
     public void bodyP3() {
         // for body message
         JPanel body = new JPanel();
+        JPanel raw=new JPanel();
+//        body.setLayout();
         // set color
         body.setBackground(Color.BLACK);
         // for header panel
@@ -388,13 +534,41 @@ public class Insomnnia extends JFrame {
         headaer.setLayout(new BoxLayout(headaer, BoxLayout.Y_AXIS));
         headaer.setLayout(null);
         //body message field
-        JTextField textField = new JTextField();
-        textField.setBackground(Color.GRAY);
-        textField.setForeground(Color.WHITE);
-        textField.setPreferredSize(new Dimension(450, 700));
-        JScrollPane scrollPane = new JScrollPane(textField);
+        JTextArea textArea = new JTextArea();
+//        textArea.setText("mamaad");
+        textArea.setSize(100,100);
+        textArea.setLocation(0,0);
+        textArea.setBackground(Color.white);
+        textArea.setLineWrap(true);
+        textArea.setFont(new Font("Arial", 14, 14));
+        textArea.setForeground(Color.BLACK);
+//        textField.setBounds(0,0,450,750);
+//        textField.setPreferredSize(new Dimension(450, 500));
+        JScrollPane scrollPane = new JScrollPane(textArea,JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,JScrollPane.
+                HORIZONTAL_SCROLLBAR_ALWAYS);
+        scrollPane.setPreferredSize(new Dimension(450, 700));
+//        scrollPane.setPreferredSize(new Dimension(200, 200));
+        scrollPane.setLocation(0, 0);
         // add text field to body
         body.add(scrollPane);
+        //
+        JTextArea textArea1 = new JTextArea();
+//        textArea.setText("mamaad");
+        textArea1.setSize(100,100);
+        textArea1.setLocation(0,0);
+        textArea1.setBackground(Color.white);
+        textArea1.setLineWrap(true);
+        textArea1.setFont(new Font("Arial", 14, 14));
+        textArea1.setForeground(Color.BLACK);
+//        textField.setBounds(0,0,450,750);
+//        textField.setPreferredSize(new Dimension(450, 500));
+        JScrollPane scrollPane1 = new JScrollPane(textArea1,JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,JScrollPane.
+                HORIZONTAL_SCROLLBAR_ALWAYS);
+        scrollPane1.setPreferredSize(new Dimension(450, 700));
+//        scrollPane.setPreferredSize(new Dimension(200, 200));
+        scrollPane1.setLocation(0, 0);
+        //
+        raw.add(scrollPane1);
         // for add raw in phase 2
 //        JPopupMenu body1=new JPopupMenu();
 //        body1.setBackground(Color.MAGENTA);
@@ -411,7 +585,17 @@ public class Insomnnia extends JFrame {
 //        JPanel test=new JPanel();
 //        test.add(body1);
         // add body to tab
-        tab.add(body, "body");
+        JTabbedPane tab1=new JTabbedPane();
+        tab1.add(body,"body");
+        tab1.add(raw,"raw");
+        //
+        tab1.setBounds(100, 100, 500, 900);
+        // set tab color
+        tab1.setBackground(Color.BLACK);
+        tab1.setForeground(Color.WHITE);
+        //
+        tab.add(tab1,"body message");
+        tab1.setLocation(50,50);
         tab.setBounds(5, 50, 500, 900);
         // set tab color
         tab.setBackground(Color.BLACK);
@@ -456,12 +640,13 @@ public class Insomnnia extends JFrame {
 //        headaer.add(name1);
 //        headaer.add(value1);
         //coppy to cliboard button
-        JButton copy = new JButton("Copy to Clipboard");
-        //add button
-        headaer.add(copy);
-        //set copy button at the end of panel
-        int x = headaer.getComponentCount() / 2;
-        copy.setBounds(300, 75 * x, 150, 25);
+//        JButton copy = new JButton("Copy to Clipboard");
+//        //add button
+//        headaer.add(copy);
+//        //set copy button at the end of panel
+//        int x = headaer.getComponentCount() / 2;
+//
+//        copy.setBounds(300, 75 * x, 150, 25);
         //add header to tab
         tab.add(headaer, "Header");
         // add tab to part 3
@@ -483,9 +668,39 @@ public class Insomnnia extends JFrame {
         option.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+
                 option();
             }
         });
+        //
+        JCheckBox direct = new JCheckBox("Follow Redirect");
+        direct.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                JCheckBox test = (JCheckBox) e.getSource();
+            }
+        });
+        JCheckBox close = new JCheckBox("Close on system tray");
+        if (tray) {
+            close.setSelected(true);
+        } else
+            close.setSelected(false);
+        close.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // colse on System tray
+                JCheckBox test = (JCheckBox) e.getSource();
+                if (test.isSelected()) {
+                    tray = true;
+                } else {
+                    tray = false;
+                }
+            }
+        });
+        // Jpanel two add two check box
+        optionPanel.add(direct);
+        optionPanel.add(close);
+        //
         option.setMnemonic('O');
         option.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, ActionEvent.ALT_MASK));
         // add exit menu and action
@@ -584,6 +799,7 @@ public class Insomnnia extends JFrame {
 
     /**
      * add new panel to header in part 2.
+     *
      * @param header which panel want to add onn it.
      * @return Jpanel which make to add header panel
      */
@@ -649,7 +865,8 @@ public class Insomnnia extends JFrame {
 
     /**
      * add two texfield to header in part2
-     * @param s text of first field
+     *
+     * @param s  text of first field
      * @param s1 text of seconf field.
      * @return JPanel added to header of part3
      */
@@ -678,34 +895,43 @@ public class Insomnnia extends JFrame {
      * make new JFrame.
      */
     public void option() {
-        // two check box
-        JCheckBox direct = new JCheckBox("Follow Redirect");
-        JCheckBox close = new JCheckBox("Close on system tray");
-        if (tray) {
-            close.setSelected(true);
-        } else
-            close.setSelected(false);
-        close.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                // colse on System tray
-                JCheckBox test = (JCheckBox) e.getSource();
-                if (test.isSelected()) {
-                    tray = true;
-                } else {
-                    tray = false;
+// two check box
+        if(optionPanel.getComponentCount()!=2) {
+            JCheckBox direct = new JCheckBox("Follow Redirect");
+            direct.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    JCheckBox test = (JCheckBox) e.getSource();
                 }
-            }
-        });
-        // Jpanel two add two check box
-        JPanel panel = new JPanel();
-        panel.add(direct);
-        panel.add(close);
+            });
+            JCheckBox close = new JCheckBox("Close on system tray");
+            if (tray) {
+                close.setSelected(true);
+            } else
+                close.setSelected(false);
+            close.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    // colse on System tray
+                    JCheckBox test = (JCheckBox) e.getSource();
+                    if (test.isSelected()) {
+                        tray = true;
+                    } else {
+                        tray = false;
+                    }
+                }
+            });
+            // Jpanel two add two check box
+            optionPanel.add(direct);
+            optionPanel.add(close);
+        }
+        JFrame panel = new JFrame(" OPTION PANEL");
+
         // add all component to option panel.
-        optionPanel.add(panel);
-        optionPanel.pack();
+        panel.add(optionPanel);
+        panel.pack();
         // show panel
-        optionPanel.setVisible(true);
+        panel.setVisible(true);
     }
 
     /**
@@ -740,7 +966,49 @@ public class Insomnnia extends JFrame {
     // complete in phase 3
     public void help() {
         JFrame help = new JFrame();
+        JTextArea details = new JTextArea();
+        details.setBackground(Color.GRAY);
+        details.setForeground(Color.WHITE);
+        details.setText("press save to save request \n press send to save request\n " +
+                "you can select request from first tab and show it" +
+                "select follow redirect from option panel\n");
+
         help.setVisible(true);
+    }
+
+    public void read() {
+        try {
+            request.setUrl(new URL(url.getText()));
+            request.setMethod(Methods.valueOf((String)itemJComboBox.getSelectedItem()));
+            for (JPanel panel : bodyform) {
+                JTextField key = (JTextField) panel.getComponent(0);
+                JTextField value = (JTextField) panel.getComponent(1);
+                if (key.getText().equals("key") || value.getText().equals("value"))
+                    continue;
+                else
+                    request.addForm(key.getText(), value.getText());
+            }
+            for (JPanel panel : requestHeader) {
+                JTextField key = (JTextField) panel.getComponent(0);
+                JTextField value = (JTextField) panel.getComponent(1);
+                if ((key.getText().equals("key") && value.getText().equals("value"))||value.getText().equals("value"))
+                    continue;
+                else
+                    request.addForm(key.getText(), value.getText());
+                request.addForm(key.getText(), value.getText());
+            }
+
+            JCheckBox follow = (JCheckBox)optionPanel.getComponent(0);
+            if (follow.isSelected()) {
+                request.setFollow(true);
+            } else
+                request.setFollow(false);
+            request.setResponse(true);
+            request.setSave(true);
+            request.setSaveRespond(true);
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
     }
 
 }
